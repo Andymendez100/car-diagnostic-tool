@@ -28,7 +28,7 @@ export interface DiagnosticResult {
     min: number;
     max: number;
   };
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+  urgency: 'routine' | 'priority' | 'immediate' | 'safety_critical';
 }
 
 export interface DiagnosticHistory {

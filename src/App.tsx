@@ -25,8 +25,8 @@ function App() {
             <h1 className="text-4xl font-bold text-tesla-white">AutoDiagnostic AI</h1>
           </div>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Advanced car diagnostic tool powered by Google Gemini AI. 
-            Get instant analysis of diagnostic codes, symptoms, and repair recommendations.
+            Professional diagnostic assistant for qualified automotive technicians. 
+            AI-powered analysis, systematic troubleshooting, and technical recommendations.
           </p>
         </header>
 
@@ -42,7 +42,7 @@ function App() {
               }`}
             >
               <Wrench className="w-5 h-5" />
-              Describe Issues
+              Diagnostic Assistant
             </button>
             <button
               onClick={() => setActiveTab('symptoms')}
@@ -53,7 +53,7 @@ function App() {
               }`}
             >
               <AlertTriangle className="w-5 h-5" />
-              Symptom Checker
+              Customer Complaints
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -85,7 +85,7 @@ function App() {
         {/* Footer */}
         <footer className="text-center mt-12 pt-8 border-t border-tesla-medium-gray">
           <p className="text-gray-400">
-            Powered by Google Gemini AI • For informational purposes only • Always consult a professional mechanic
+            Powered by Google Gemini AI • Professional diagnostic assistant • For qualified automotive technicians
           </p>
         </footer>
       </div>

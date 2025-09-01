@@ -9,6 +9,20 @@ interface Props {
   onAddToHistory: (entry: DiagnosticHistory) => void;
 }
 
+interface ConversationState {
+  conversationId: string;
+  message: string;
+  responseOptions: Array<{
+    id: string;
+    text: string;
+    category: string;
+  }>;
+  currentStep: number;
+  totalSteps: number;
+  analysis?: string;
+  history: Array<{question: string, answer: string}>;
+}
+
 const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
   const [issues, setIssues] = useState<CarIssue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +33,7 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
   });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+  const [conversation, setConversation] = useState<ConversationState | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
   const geminiService = new GeminiService();
@@ -47,13 +61,16 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
 
       setIssues([...issues, ...newIssues]);
       setSearchTerm('');
-      setAiSuggestions(null); // Clear AI suggestions when we find matches
+      setConversation(null); // Clear conversation when we find matches
     } else {
-      // No matches found - use AI to analyze user input
+      // No matches found - start AI diagnostic conversation
       setIsSearching(true);
       try {
-        const suggestions = await geminiService.analyzeUserInput(searchTerm, vehicleInfo);
-        setAiSuggestions(suggestions);
+        const conversationStart = await geminiService.startDiagnosticConversation(searchTerm, vehicleInfo);
+        setConversation({
+          ...conversationStart,
+          history: []
+        });
         setSearchTerm('');
       } catch (error) {
         console.error('AI analysis failed:', error);
@@ -64,17 +81,55 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
     }
   };
 
-  const addSuggestedIssue = (suggestedIssue: any) => {
-    const newIssue: CarIssue = {
-      id: `ai-${Date.now()}`,
-      category: suggestedIssue.category,
-      description: suggestedIssue.description,
-      severity: suggestedIssue.severity,
-      commonCauses: [suggestedIssue.reasoning],
-      keywords: []
-    };
+  const handleConversationResponse = async (selectedOption: {id: string, text: string, category: string}) => {
+    if (!conversation) return;
+    
+    setIsSearching(true);
+    try {
+      // Add current Q&A to history
+      const updatedHistory = [
+        ...conversation.history,
+        {
+          question: conversation.message,
+          answer: selectedOption.text
+        }
+      ];
 
-    setIssues([...issues, newIssue]);
+      const nextStep = await geminiService.continueDiagnosticConversation(
+        conversation.conversationId,
+        selectedOption.text,
+        updatedHistory,
+        vehicleInfo
+      );
+
+      if (nextStep.finalDiagnosis) {
+        // Conversation complete - show final diagnosis
+        setResult(nextStep.finalDiagnosis);
+        setConversation(null);
+        
+        // Add to history
+        const historyEntry: DiagnosticHistory = {
+          id: Date.now().toString(),
+          date: new Date().toISOString(),
+          codes: [],
+          symptoms: updatedHistory.map(h => h.answer),
+          result: nextStep.finalDiagnosis,
+          vehicleInfo: { ...vehicleInfo }
+        };
+        onAddToHistory(historyEntry);
+      } else {
+        // Continue conversation
+        setConversation({
+          ...nextStep,
+          history: updatedHistory
+        });
+      }
+    } catch (error) {
+      console.error('Conversation continuation failed:', error);
+      alert('Sorry, there was an issue continuing the diagnostic. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const removeIssue = (issueIdToRemove: string) => {
@@ -128,10 +183,10 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
 
   const getUrgencyColor = (urgency: DiagnosticResult['urgency']) => {
     switch (urgency) {
-      case 'low': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'high': return 'text-orange-600';
-      case 'critical': return 'text-red-600';
+      case 'routine': return 'text-green-600';
+      case 'priority': return 'text-yellow-600';
+      case 'immediate': return 'text-orange-600';
+      case 'safety_critical': return 'text-red-600';
     }
   };
 
@@ -147,19 +202,19 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
       <div className="bg-tesla-dark-gray rounded-xl shadow-2xl border border-tesla-medium-gray p-6">
         <h2 className="text-2xl font-semibold text-tesla-white mb-4 flex items-center gap-2">
           <Search className="w-6 h-6 text-tesla-red" />
-          Describe Your Car Issues
+          Customer Complaint Analysis
         </h2>
         
         <div className="mb-4">
           <p className="text-gray-300 text-sm mb-3">
-            Describe what you're experiencing in plain English. Try keywords like: "clicking noise", "grinding brakes", "engine shaking", "won't start", etc.
+            Enter customer complaint or observed symptoms for AI-assisted diagnostic guidance. Use technical terminology or customer descriptions: "intermittent misfire", "brake pedal fade", "PCM communication error", etc.
           </p>
           <div className="flex gap-3">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="e.g., hearing a clicking noise from the engine"
+              placeholder="e.g., customer reports intermittent rough idle during warm-up"
               className="flex-1 px-4 py-2 bg-tesla-black border border-tesla-medium-gray rounded-lg text-tesla-white placeholder-gray-500 focus:ring-2 focus:ring-tesla-red focus:border-tesla-red"
               onKeyPress={(e) => e.key === 'Enter' && searchIssues()}
             />
@@ -183,67 +238,86 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
           </div>
         </div>
 
-        {/* AI Suggestions */}
-        {aiSuggestions && (
-          <div className="mb-6 bg-tesla-black rounded-lg border border-tesla-medium-gray p-4">
-            <h3 className="text-lg font-semibold text-tesla-white mb-3">AI Analysis & Suggestions</h3>
-            
-            {/* AI Analysis */}
-            <div className="mb-4">
-              <p className="text-gray-300 leading-relaxed">{aiSuggestions.analysis}</p>
+        {/* AI Diagnostic Conversation */}
+        {conversation && (
+          <div className="mb-6 bg-tesla-black rounded-lg border border-tesla-medium-gray p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-tesla-white flex items-center gap-2">
+                🔧 AI Diagnostic Assistant Session
+              </h3>
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-gray-400">
+                  Step {conversation.currentStep} of {conversation.totalSteps}
+                </div>
+                <div className="w-32 bg-tesla-dark-gray rounded-full h-2">
+                  <div 
+                    className="bg-tesla-red h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(conversation.currentStep / conversation.totalSteps) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
 
-            {/* Suggested Issues */}
-            {aiSuggestions.suggestedIssues && aiSuggestions.suggestedIssues.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-md font-medium text-tesla-white mb-2">Possible Issues:</h4>
-                <div className="space-y-2">
-                  {aiSuggestions.suggestedIssues.map((suggested: any, index: number) => (
-                    <div key={index} className="bg-tesla-dark-gray rounded-lg border border-tesla-medium-gray p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`px-2 py-1 rounded-full text-xs border ${getSeverityColor(suggested.severity)}`}>
-                              {suggested.severity.toUpperCase()}
-                            </span>
-                            <span className="text-sm text-gray-400">{suggested.category}</span>
-                          </div>
-                          <p className="text-tesla-white font-medium text-sm">{suggested.description}</p>
-                          <p className="text-gray-400 text-xs mt-1">{suggested.reasoning}</p>
-                        </div>
-                        <button
-                          onClick={() => addSuggestedIssue(suggested)}
-                          className="ml-3 px-3 py-1 bg-tesla-red text-tesla-white rounded text-xs hover:bg-tesla-red-hover transition-colors"
-                        >
-                          Add
-                        </button>
-                      </div>
+            {/* Conversation History */}
+            {conversation.history.length > 0 && (
+              <div className="mb-4 space-y-2">
+                {conversation.history.map((exchange, index) => (
+                  <div key={index} className="text-sm">
+                    <div className="text-gray-400 mb-1">Q: {exchange.question}</div>
+                    <div className="text-tesla-white mb-2 pl-4 border-l-2 border-tesla-red">
+                      A: {exchange.answer}
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Current Question */}
+            <div className="mb-4">
+              <div className="bg-tesla-dark-gray rounded-lg p-4 border-l-4 border-tesla-red">
+                <p className="text-tesla-white font-medium">{conversation.message}</p>
+                {conversation.analysis && (
+                  <p className="text-gray-300 text-sm mt-2 italic">{conversation.analysis}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Response Pills */}
+            {conversation.responseOptions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-400">Choose the option that best describes your situation:</p>
+                <div className="grid gap-2">
+                  {conversation.responseOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleConversationResponse(option)}
+                      disabled={isSearching}
+                      className="text-left p-3 bg-tesla-dark-gray border border-tesla-medium-gray rounded-lg hover:border-tesla-red hover:bg-tesla-medium-gray transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-tesla-red rounded-full"></div>
+                        <span className="text-tesla-white font-medium">{option.text}</span>
+                        <span className="text-xs text-gray-500 ml-auto">{option.category}</span>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Clarifying Questions */}
-            {aiSuggestions.clarifyingQuestions && aiSuggestions.clarifyingQuestions.length > 0 && (
-              <div>
-                <h4 className="text-md font-medium text-tesla-white mb-2">To help narrow down the problem:</h4>
-                <ul className="space-y-1">
-                  {aiSuggestions.clarifyingQuestions.map((question: string, index: number) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-gray-300">
-                      <span className="text-tesla-red mt-1">•</span>
-                      {question}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => setAiSuggestions(null)}
-                  className="mt-3 text-xs text-gray-400 hover:text-tesla-red transition-colors"
-                >
-                  Clear suggestions
-                </button>
+            {isSearching && (
+              <div className="flex items-center justify-center gap-2 text-gray-400 mt-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-tesla-red"></div>
+                Processing diagnostic analysis...
               </div>
             )}
+
+            <button
+              onClick={() => setConversation(null)}
+              className="mt-4 text-xs text-gray-400 hover:text-tesla-red transition-colors"
+            >
+              Reset diagnostic session
+            </button>
           </div>
         )}
 

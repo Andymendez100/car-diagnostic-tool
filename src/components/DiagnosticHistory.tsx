@@ -31,10 +31,10 @@ const DiagnosticHistory: React.FC<Props> = ({ history }) => {
 
   const getUrgencyColor = (urgency: DiagnosticHistoryType['result']['urgency']) => {
     switch (urgency) {
-      case 'low': return 'text-green-600 bg-green-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'critical': return 'text-red-600 bg-red-100';
+      case 'routine': return 'text-green-600 bg-green-100';
+      case 'priority': return 'text-yellow-600 bg-yellow-100';
+      case 'immediate': return 'text-orange-600 bg-orange-100';
+      case 'safety_critical': return 'text-red-600 bg-red-100';
     }
   };
 

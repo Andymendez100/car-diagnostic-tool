@@ -57,7 +57,7 @@ Focus on practical, actionable advice. Consider the vehicle's age and mileage in
         analysis: 'Unable to analyze issues at this time. Please try again later.',
         possibleCauses: ['AI service temporarily unavailable'],
         recommendedActions: ['Retry analysis', 'Consult a professional mechanic'],
-        urgency: 'medium' as const
+        urgency: 'priority' as const
       };
     }
   }
@@ -113,60 +113,58 @@ Consider the vehicle's age and mileage. If symptoms are safety-critical, priorit
         analysis: 'Unable to analyze symptoms at this time. Please try again later.',
         possibleCauses: ['API service temporarily unavailable'],
         recommendedActions: ['Retry analysis', 'Consult a professional mechanic'],
-        urgency: 'medium' as const
+        urgency: 'priority' as const
       };
     }
   }
 
-  async analyzeUserInput(
+  async startDiagnosticConversation(
     userInput: string,
     vehicleInfo: VehicleInfo
   ): Promise<{
-    suggestedIssues: Array<{
-      description: string;
+    conversationId: string;
+    message: string;
+    responseOptions: Array<{
+      id: string;
+      text: string;
       category: string;
-      severity: 'low' | 'medium' | 'high' | 'critical';
-      reasoning: string;
     }>;
-    clarifyingQuestions: string[];
-    analysis: string;
+    currentStep: number;
+    totalSteps: number;
+    analysis?: string;
   }> {
     const prompt = `
-You are an expert automotive diagnostic AI. A car owner has described their vehicle problem, but it doesn't match our predefined issue database. Help them by analyzing their input and suggesting relevant car issues.
+You are an AI diagnostic assistant for qualified automotive technicians. A technician has described a customer complaint: "${userInput}"
 
-User's Description: "${userInput}"
+Vehicle: ${vehicleInfo.year || 'Unknown'} ${vehicleInfo.make || 'Unknown'} ${vehicleInfo.model || 'Unknown'}
+Mileage: ${vehicleInfo.mileage ? `${vehicleInfo.mileage} miles` : 'Unknown'}
 
-Vehicle Information:
-- Make: ${vehicleInfo.make || 'Not specified'}
-- Model: ${vehicleInfo.model || 'Not specified'}
-- Year: ${vehicleInfo.year || 'Not specified'}
-- Mileage: ${vehicleInfo.mileage ? `${vehicleInfo.mileage} miles` : 'Not specified'}
+Your role is to provide professional diagnostic guidance following industry-standard troubleshooting procedures. Start with systematic diagnostic questioning to isolate the root cause.
 
-Please provide a response in the following JSON format:
+Respond in this JSON format:
 {
-  "analysis": "Brief analysis of what the user might be experiencing based on their description",
-  "suggestedIssues": [
+  "conversationId": "diag_${Date.now()}",
+  "message": "Professional diagnostic guidance acknowledging the complaint and outlining systematic approach",
+  "responseOptions": [
     {
-      "description": "Natural language description of a potential issue",
-      "category": "Engine|Brakes|Transmission|Electrical|Suspension|Steering|Exhaust|Climate Control|Fuel System|Tires",
-      "severity": "low|medium|high|critical",
-      "reasoning": "Why this issue might match their description"
+      "id": "option1", 
+      "text": "Specific diagnostic test or symptom verification",
+      "category": "operational_conditions|measurement|inspection|verification"
     }
   ],
-  "clarifyingQuestions": [
-    "Specific questions to help narrow down the problem",
-    "Questions about when the issue occurs",
-    "Questions about additional symptoms"
-  ]
+  "currentStep": 1,
+  "totalSteps": 5,
+  "analysis": "Initial diagnostic assessment and strategy"
 }
 
-Focus on:
-1. Interpreting their description even if it's vague or uses non-technical terms
-2. Suggesting 2-4 most likely issues that could match their description
-3. Asking 3-5 clarifying questions to help diagnose the problem more accurately
-4. Being helpful and encouraging, not dismissive
+Focus on professional diagnostic procedures:
+- "Symptom occurs during cold start operation"
+- "Issue manifests under load conditions"
+- "Verified with oscilloscope/scan tool readings"
+- "Reproduced during road test at specific RPM range"
+- "Confirmed through component isolation testing"
 
-Consider common car problems and how non-technical users might describe them.
+Use technical language appropriate for certified technicians and ASE-level diagnostics.
 `;
 
     try {
@@ -183,20 +181,112 @@ Consider common car problems and how non-technical users might describe them.
     } catch (error) {
       console.error('Gemini API error:', error);
       return {
-        analysis: 'I understand you\'re experiencing some issues with your vehicle. Could you provide more details?',
-        suggestedIssues: [
-          {
-            description: 'General vehicle performance issue',
-            category: 'Engine',
-            severity: 'medium',
-            reasoning: 'Based on your description, this could be related to engine performance'
-          }
+        conversationId: `diag_${Date.now()}`,
+        message: 'Initiating systematic diagnostic procedure for reported complaint. Following industry-standard troubleshooting methodology.',
+        responseOptions: [
+          { id: 'operational1', text: 'Symptom occurs during engine start cycle', category: 'operational_conditions' },
+          { id: 'operational2', text: 'Issue manifests during normal operation', category: 'operational_conditions' },
+          { id: 'operational3', text: 'Problem occurs during idle/park conditions', category: 'operational_conditions' },
+          { id: 'operational4', text: 'Intermittent fault - requires specific conditions', category: 'operational_conditions' }
         ],
-        clarifyingQuestions: [
-          'When does this issue typically occur?',
-          'Do you notice any unusual sounds, smells, or vibrations?',
-          'Has this problem gotten worse over time?'
-        ]
+        currentStep: 1,
+        totalSteps: 5,
+        analysis: 'Beginning with operational condition identification to isolate fault parameters.'
+      };
+    }
+  }
+
+  async continueDiagnosticConversation(
+    conversationId: string,
+    selectedOption: string,
+    conversationHistory: Array<{question: string, answer: string}>,
+    vehicleInfo: VehicleInfo
+  ): Promise<{
+    conversationId: string;
+    message: string;
+    responseOptions: Array<{
+      id: string;
+      text: string;
+      category: string;
+    }>;
+    currentStep: number;
+    totalSteps: number;
+    analysis?: string;
+    finalDiagnosis?: DiagnosticResult;
+  }> {
+    const historyText = conversationHistory.map(h => `Q: ${h.question}\nA: ${h.answer}`).join('\n\n');
+    const currentStep = conversationHistory.length + 1;
+    
+    const prompt = `
+You are an AI diagnostic assistant supporting professional automotive technicians.
+
+Vehicle: ${vehicleInfo.year || 'Unknown'} ${vehicleInfo.make || 'Unknown'} ${vehicleInfo.model || 'Unknown'}
+Diagnostic History:
+${historyText}
+
+Latest Test Result/Observation: "${selectedOption}"
+Current Step: ${currentStep} of 5
+
+Provide the next diagnostic procedure following systematic troubleshooting methodology. If this is step 5, provide comprehensive diagnostic conclusion with technical recommendations.
+
+${currentStep < 5 ? `
+Respond with JSON format:
+{
+  "conversationId": "${conversationId}",
+  "message": "Technical guidance for next diagnostic procedure based on current findings",
+  "responseOptions": [
+    {"id": "option1", "text": "Specific test procedure or measurement", "category": "electrical_test|mechanical_test|scan_tool|visual_inspection"}
+  ],
+  "currentStep": ${currentStep},
+  "totalSteps": 5,
+  "analysis": "Diagnostic findings and next logical test sequence"
+}
+` : `
+This is the final diagnostic step. Provide comprehensive technical diagnosis:
+{
+  "conversationId": "${conversationId}",
+  "message": "Complete diagnostic conclusion with technical analysis",
+  "responseOptions": [],
+  "currentStep": 5,
+  "totalSteps": 5,
+  "finalDiagnosis": {
+    "analysis": "Technical diagnostic analysis with root cause identification",
+    "possibleCauses": ["Primary suspects with technical reasoning"],
+    "recommendedActions": ["Specific repair procedures and parts replacement recommendations"],
+    "estimatedCost": {"min": labor_and_parts_minimum, "max": labor_and_parts_maximum},
+    "urgency": "routine|priority|immediate|safety_critical"
+  }
+}
+`}
+
+Use professional diagnostic terminology. Include specific test procedures, component isolation methods, and technical specifications where applicable.
+`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      
+      throw new Error('Failed to parse AI response');
+    } catch (error) {
+      console.error('Gemini API error:', error);
+      return {
+        conversationId,
+        message: 'Diagnostic sequence interrupted. Recommend manual troubleshooting procedures.',
+        responseOptions: [],
+        currentStep: 5,
+        totalSteps: 5,
+        finalDiagnosis: {
+          analysis: 'Insufficient diagnostic data collected. Recommend comprehensive system inspection using appropriate test equipment.',
+          possibleCauses: ['Multiple potential failure modes require systematic testing', 'Intermittent fault conditions may require extended monitoring'],
+          recommendedActions: ['Perform complete system scan with professional diagnostic equipment', 'Document fault conditions and environmental factors', 'Consider component isolation testing'],
+          urgency: 'priority' as const
+        }
       };
     }
   }

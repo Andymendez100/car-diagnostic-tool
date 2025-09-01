@@ -83,10 +83,10 @@ const SymptomChecker: React.FC<Props> = ({ onAddToHistory }) => {
 
   const getUrgencyColor = (urgency: DiagnosticResult['urgency']) => {
     switch (urgency) {
-      case 'low': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'high': return 'text-orange-600';
-      case 'critical': return 'text-red-600';
+      case 'routine': return 'text-green-600';
+      case 'priority': return 'text-yellow-600';
+      case 'immediate': return 'text-orange-600';
+      case 'safety_critical': return 'text-red-600';
     }
   };
 
