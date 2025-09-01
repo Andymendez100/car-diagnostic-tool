@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Car, Wrench, AlertTriangle, History } from 'lucide-react';
 import DiagnosticTool from './components/DiagnosticTool';
 import SymptomChecker from './components/SymptomChecker';
 import DiagnosticHistory from './components/DiagnosticHistory';
+import ApiKeySetup from './components/ApiKeySetup';
 import { DiagnosticHistory as DiagnosticHistoryType } from './types/diagnostic';
 
 type ActiveTab = 'diagnostic' | 'symptoms' | 'history';
@@ -10,10 +11,29 @@ type ActiveTab = 'diagnostic' | 'symptoms' | 'history';
 function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('diagnostic');
   const [history, setHistory] = useState<DiagnosticHistoryType[]>([]);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Check for stored API key on component mount
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('gemini-api-key');
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
+
+  const handleApiKeySet = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('gemini-api-key', key);
+  };
 
   const addToHistory = (entry: DiagnosticHistoryType) => {
     setHistory(prev => [entry, ...prev]);
   };
+
+  // Show API key setup if no key is configured
+  if (!apiKey) {
+    return <ApiKeySetup onApiKeySet={handleApiKeySet} />;
+  }
 
   return (
     <div className="min-h-screen bg-tesla-gradient">
@@ -72,10 +92,10 @@ function App() {
         {/* Main Content */}
         <main>
           {activeTab === 'diagnostic' && (
-            <DiagnosticTool onAddToHistory={addToHistory} />
+            <DiagnosticTool onAddToHistory={addToHistory} apiKey={apiKey} />
           )}
           {activeTab === 'symptoms' && (
-            <SymptomChecker onAddToHistory={addToHistory} />
+            <SymptomChecker onAddToHistory={addToHistory} apiKey={apiKey} />
           )}
           {activeTab === 'history' && (
             <DiagnosticHistory history={history} />

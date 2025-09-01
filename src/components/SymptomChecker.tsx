@@ -7,9 +7,10 @@ import VehicleInfoForm from './VehicleInfoForm';
 
 interface Props {
   onAddToHistory: (entry: DiagnosticHistory) => void;
+  apiKey: string;
 }
 
-const SymptomChecker: React.FC<Props> = ({ onAddToHistory }) => {
+const SymptomChecker: React.FC<Props> = ({ onAddToHistory, apiKey }) => {
   const [symptoms, setSymptoms] = useState<Symptom[]>(commonSymptoms);
   const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo>({
     make: '',
@@ -21,7 +22,7 @@ const SymptomChecker: React.FC<Props> = ({ onAddToHistory }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const geminiService = new GeminiService();
+  const geminiService = new GeminiService(apiKey);
 
   const categories = ['all', ...Array.from(new Set(symptoms.map(s => s.category)))];
   

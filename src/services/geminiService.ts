@@ -2,10 +2,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { VehicleInfo, Symptom, DiagnosticResult } from '../types/diagnostic';
 import { CarIssue } from '../data/commonIssues';
 
-const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY || '');
-
 export class GeminiService {
-  private model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  private apiKey: string;
+  private genAI: GoogleGenerativeAI;
+  private model: any;
+
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || localStorage.getItem('gemini-api-key') || process.env.REACT_APP_GEMINI_API_KEY || '';
+    this.genAI = new GoogleGenerativeAI(this.apiKey);
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  }
 
   async analyzeCarIssues(
     issues: CarIssue[],

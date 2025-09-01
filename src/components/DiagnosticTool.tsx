@@ -7,6 +7,7 @@ import VehicleInfoForm from './VehicleInfoForm';
 
 interface Props {
   onAddToHistory: (entry: DiagnosticHistory) => void;
+  apiKey: string;
 }
 
 interface ConversationState {
@@ -23,7 +24,7 @@ interface ConversationState {
   history: Array<{question: string, answer: string}>;
 }
 
-const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
+const DiagnosticTool: React.FC<Props> = ({ onAddToHistory, apiKey }) => {
   const [issues, setIssues] = useState<CarIssue[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [vehicleInfo, setVehicleInfo] = useState<VehicleInfo>({
@@ -36,7 +37,7 @@ const DiagnosticTool: React.FC<Props> = ({ onAddToHistory }) => {
   const [conversation, setConversation] = useState<ConversationState | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  const geminiService = new GeminiService();
+  const geminiService = new GeminiService(apiKey);
 
   const searchIssues = async () => {
     if (!searchTerm.trim()) return;
