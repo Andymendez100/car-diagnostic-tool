@@ -1,46 +1,180 @@
-# Getting Started with Create React App
+# AutoDiagnostic AI
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An advanced car diagnostic tool powered by Google Gemini AI that provides intelligent analysis of diagnostic trouble codes, symptom checking, and repair recommendations.
 
-## Available Scripts
+![AutoDiagnostic AI](https://img.shields.io/badge/AI%20Powered-Gemini-blue?style=for-the-badge)
+![React](https://img.shields.io/badge/React-TypeScript-blue?style=for-the-badge&logo=react)
+![Tailwind](https://img.shields.io/badge/Styled%20with-Tailwind%20CSS-blue?style=for-the-badge&logo=tailwindcss)
 
-In the project directory, you can run:
+## 🚗 Features
 
-### `npm start`
+### 🔧 OBD Scanner Analysis
+- **Diagnostic Code Input**: Enter OBD-II trouble codes manually
+- **Pre-populated Database**: Common diagnostic codes with descriptions and severity levels
+- **AI-Powered Analysis**: Get comprehensive explanations and repair recommendations
+- **Cost Estimation**: Receive estimated repair costs for identified issues
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### 🩺 Symptom Checker
+- **Comprehensive Symptom Database**: 40+ common car symptoms organized by system
+- **Category Filtering**: Filter by Engine, Transmission, Brakes, Electrical, etc.
+- **Search Functionality**: Quickly find specific symptoms
+- **Multi-Select Interface**: Select multiple symptoms for accurate diagnosis
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### 📊 Diagnostic History
+- **Session Tracking**: Keep records of all diagnostic analyses
+- **Vehicle Information**: Store make, model, year, and mileage data
+- **Expandable Details**: View full analysis results and recommendations
+- **Cost Tracking**: Monitor repair cost estimates over time
 
-### `npm test`
+### 🤖 AI Integration
+- **Google Gemini AI**: Advanced natural language processing for diagnostic analysis
+- **Contextual Analysis**: Considers vehicle age, mileage, and system relationships
+- **Intelligent Recommendations**: Prioritized repair actions based on urgency
+- **Plain English Explanations**: Complex technical issues explained simply
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Installation
 
-### `npm run build`
+### Prerequisites
+- **Node.js** (version 16.0 or higher)
+- **npm** (comes with Node.js)
+- **Google Gemini API Key** (free tier available)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Setup Steps
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. **Clone or Download the Project**
+   ```bash
+   cd car-diagnostic-tool
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-### `npm run eject`
+3. **Configure Gemini API**
+   - Get your free API key from [Google AI Studio](https://ai.google.dev)
+   - Create a `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
+   ```
+   - Add your API key to `.env`:
+   ```
+   REACT_APP_GEMINI_API_KEY=your_actual_api_key_here
+   ```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+4. **Start the Development Server**
+   ```bash
+   npm start
+   ```
+   The app will open at [http://localhost:3000](http://localhost:3000)
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🎯 Usage Guide
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### Getting Started
+1. **Enter Vehicle Information**: Provide your car's make, model, and year for accurate analysis
+2. **Choose Your Method**:
+   - **OBD Scanner**: If you have diagnostic codes from an OBD-II scanner
+   - **Symptom Checker**: If you're experiencing issues but don't have codes
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+### Using the OBD Scanner
+1. Enter diagnostic codes (e.g., P0300, P0171) in the input field
+2. Codes are automatically recognized and categorized by severity
+3. Click "Analyze with Gemini AI" for comprehensive analysis
+4. Review AI recommendations and cost estimates
 
-## Learn More
+### Using the Symptom Checker
+1. Browse symptoms by category or use the search function
+2. Select all symptoms you're experiencing
+3. Click "Analyze Symptoms with Gemini AI"
+4. Get possible causes and recommended diagnostic steps
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Viewing History
+- Access the History tab to review past analyses
+- Click on any entry to expand full details
+- Track recurring issues and repair costs over time
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 📋 Technical Details
+
+### Architecture
+- **Frontend**: React 18 with TypeScript for type safety
+- **Styling**: Tailwind CSS for responsive design
+- **Icons**: Lucide React for consistent iconography
+- **AI Integration**: Google Generative AI SDK for Gemini API
+- **State Management**: React hooks for local state
+
+### Key Components
+- `DiagnosticTool`: OBD code analysis interface
+- `SymptomChecker`: Symptom selection and analysis
+- `DiagnosticHistory`: Historical analysis viewer
+- `VehicleInfoForm`: Vehicle data collection
+- `GeminiService`: AI integration service
+
+### Data Models
+- **DiagnosticCode**: OBD trouble code definitions
+- **Symptom**: User-reportable vehicle symptoms
+- **DiagnosticResult**: AI analysis results
+- **VehicleInfo**: Vehicle specification data
+
+## 🔒 Privacy & Safety
+
+- **Local Storage**: Vehicle data stored locally in browser
+- **API Communication**: Only diagnostic data sent to Gemini AI
+- **No Personal Data**: No collection of personal or location information
+- **Educational Purpose**: Tool provides guidance only - always consult professionals
+
+## 📱 Browser Compatibility
+
+- **Chrome** 80+
+- **Firefox** 75+
+- **Safari** 13+
+- **Edge** 80+
+
+## 🚀 Development Scripts
+
+```bash
+# Start development server
+npm start
+
+# Run tests
+npm test
+
+# Build for production
+npm run build
+
+# Analyze bundle size
+npm run build && npx serve -s build
+```
+
+## 🤝 Contributing
+
+This is a demonstration project showcasing AI integration in automotive diagnostics. For production use, consider:
+- Professional mechanical consultation
+- Real OBD-II scanner integration
+- Enhanced error handling
+- User authentication
+- Cloud data storage
+
+## 📄 License
+
+This project is for educational and demonstration purposes. Always consult qualified automotive professionals for actual vehicle repairs.
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**API Key Error**
+- Ensure `.env` file exists with correct API key
+- Verify API key is active in Google AI Studio
+- Restart development server after adding API key
+
+**Build Errors**
+- Clear node_modules and reinstall: `rm -rf node_modules package-lock.json && npm install`
+- Check Node.js version compatibility
+
+**Styling Issues**
+- Ensure Tailwind CSS is properly configured
+- Check PostCSS configuration
+
+## 📞 Support
+
+For technical issues or questions about the implementation, review the code structure and component documentation. This project demonstrates modern React patterns and AI integration techniques suitable for automotive applications.
