@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, X, Search, AlertCircle, Car, DollarSign, Clock } from 'lucide-react';
+import { X, Search, AlertCircle, Car, DollarSign, Clock } from 'lucide-react';
 import { VehicleInfo, DiagnosticResult, DiagnosticHistory } from '../types/diagnostic';
 import { commonCarIssues, CarIssue } from '../data/commonIssues';
 import { GeminiService } from '../services/geminiService';
